@@ -42,7 +42,7 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [sectors, setSectors] = useState<SectorSummary[]>([]);
   const [search, setSearch] = useState("");
-  
+
   useEffect(() => {
     async function loadPortfolio() {
       try {
@@ -93,11 +93,28 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <div className="mx-auto max-w-7xl">
-        <h1 className="mb-2 text-3xl font-bold">Portfolio Dashboard</h1>
+    <main className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
+      <div className="mx-auto max-w-[1600px]">
+        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <p className="mb-1 text-sm font-medium uppercase tracking-wide text-gray-500">
+              Investment Overview
+            </p>
 
-        <p className="mb-2 text-gray-600">Real-time portfolio performance</p>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              Portfolio Dashboard
+            </h1>
+
+            <p className="mt-2 text-gray-600">
+              Track portfolio performance and market fundamentals.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
+            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-green-500" />
+            Live
+          </div>
+        </div>
 
         {lastUpdated && (
           <p className="mb-6 text-sm text-gray-500">
@@ -105,11 +122,11 @@ export default function Home() {
             {" • "}Auto-refreshes every 15 seconds
           </p>
         )}
+
         {summary && (
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl bg-white p-5 shadow">
               <p className="text-sm text-gray-500">Total Investment</p>
-
               <p className="mt-2 text-2xl font-bold">
                 ₹
                 {summary.totalInvestment.toLocaleString("en-IN", {
@@ -120,7 +137,6 @@ export default function Home() {
 
             <div className="rounded-xl bg-white p-5 shadow">
               <p className="text-sm text-gray-500">Present Value</p>
-
               <p className="mt-2 text-2xl font-bold">
                 ₹
                 {summary.totalPresentValue.toLocaleString("en-IN", {
@@ -131,7 +147,6 @@ export default function Home() {
 
             <div className="rounded-xl bg-white p-5 shadow">
               <p className="text-sm text-gray-500">Total Gain / Loss</p>
-
               <p
                 className={`mt-2 text-2xl font-bold ${
                   summary.totalGainLoss >= 0 ? "text-green-600" : "text-red-600"
@@ -146,7 +161,6 @@ export default function Home() {
 
             <div className="rounded-xl bg-white p-5 shadow">
               <p className="text-sm text-gray-500">Overall Return</p>
-
               <p
                 className={`mt-2 text-2xl font-bold ${
                   summary.totalGainLossPercentage >= 0
@@ -160,26 +174,43 @@ export default function Home() {
             </div>
           </div>
         )}
-        <div className="space-y-6">
-          {sectors.map((sector) => (
+
+        <div className="mb-6">
+          <input
+            type="text"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search stocks..."
+            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200 md:max-w-md"
+          />
+        </div>
+
+        {sectors.map((sector) => {
+          const filteredHoldings = sector.holdings.filter((holding) =>
+            holding.particulars.toLowerCase().includes(search.toLowerCase())
+          );
+
+          if (filteredHoldings.length === 0) {
+            return null;
+          }
+
+          return (
             <section
               key={sector.sector}
-              className="overflow-hidden rounded-xl bg-white shadow"
+              className="mb-6 overflow-hidden rounded-xl bg-white shadow"
             >
               <div className="border-b bg-gray-50 p-5">
                 <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
                   <div>
                     <h2 className="text-xl font-bold">{sector.sector}</h2>
-
                     <p className="text-sm text-gray-500">
-                      {sector.holdings.length} holdings
+                      {filteredHoldings.length} holdings
                     </p>
                   </div>
 
                   <div className="flex flex-wrap gap-6 text-sm">
                     <div>
                       <p className="text-gray-500">Investment</p>
-
                       <p className="font-semibold">
                         ₹{sector.totalInvestment.toLocaleString("en-IN")}
                       </p>
@@ -187,7 +218,6 @@ export default function Home() {
 
                     <div>
                       <p className="text-gray-500">Present Value</p>
-
                       <p className="font-semibold">
                         ₹{sector.totalPresentValue.toLocaleString("en-IN")}
                       </p>
@@ -195,7 +225,6 @@ export default function Home() {
 
                     <div>
                       <p className="text-gray-500">Gain / Loss</p>
-
                       <p
                         className={
                           sector.totalGainLoss >= 0
@@ -230,7 +259,7 @@ export default function Home() {
                   </thead>
 
                   <tbody>
-                    {sector.holdings.map((holding) => (
+                    {filteredHoldings.map((holding) => (
                       <tr
                         key={holding.id}
                         className="border-b last:border-b-0 hover:bg-gray-50"
@@ -287,7 +316,7 @@ export default function Home() {
                                 "en-IN",
                                 {
                                   maximumFractionDigits: 2,
-                                },
+                                }
                               )}`
                             : "—"}
                         </td>
@@ -309,8 +338,8 @@ export default function Home() {
                 </table>
               </div>
             </section>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </main>
   );
