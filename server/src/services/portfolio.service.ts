@@ -62,7 +62,7 @@ export async function getPortfolio(): Promise<Holding[]> {
 
   let currentSector = "Other";
 
-  rows.forEach((row: Record<string, unknown>, index: number) => {
+  rows.forEach((row, index) => {
     const particulars = cleanText(
       getRowValue(row, ["Particulars", "Company", "Name", "__EMPTY_1"]),
     );

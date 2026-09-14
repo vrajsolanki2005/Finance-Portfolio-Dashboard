@@ -18,6 +18,7 @@ app.get("/api/health", (_req, res) => {
   res.json({
     success: true,
     message: "Portfolio backend is running",
+    timestamp: new Date().toISOString(),
   });
 });
 
