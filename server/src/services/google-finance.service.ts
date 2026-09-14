@@ -1,5 +1,7 @@
 import * as cheerio from "cheerio";
+
 import { getCache, setCache } from "./cache.service.js";
+
 export interface GoogleFinanceData {
   peRatio: number | null;
   latestEarnings: number | null;
@@ -20,18 +22,22 @@ function parseNumber(value: string): number | null {
 export async function getGoogleFinanceData(
   symbol: string,
 ): Promise<GoogleFinanceData> {
+  const cacheKey = `google-finance:${symbol}`;
+
+  // 1. Check cache first.
+  const cached = getCache<GoogleFinanceData>(cacheKey);
+
+  if (cached) {
+    console.log(`Google Finance cache hit: ${symbol}`);
+
+    return cached;
+  }
+
+  console.log(`Fetching Google Finance: ${symbol}`);
+
   try {
-    const cacheKey = `google-finance:${symbol}`;
+    const url = `https://www.google.com/finance/quote/${symbol}?hl=en`;
 
-    const cached = getCache<GoogleFinanceData>(cacheKey);
-
-    if (cached) {
-      console.log(`Returning cached Google Finance data for ${symbol}`);
-
-      return cached;
-    }
-    // const url = `https://www.google.com/finance/quote/${symbol}:NSE?hl=en`;
-    const url =`https://www.google.com/finance/quote/${symbol}?hl=en`;
     const response = await fetch(url, {
       headers: {
         "User-Agent":
@@ -53,26 +59,22 @@ export async function getGoogleFinanceData(
 
     const epsMatch = pageText.match(/EPS\s*₹?\s*([0-9,.]+)/i);
 
-    const data: GoogleFinanceData = {
-  peRatio: peMatch
-    ? parseNumber(peMatch[1])
-    : null,
+    const result: GoogleFinanceData = {
+      peRatio: peMatch ? parseNumber(peMatch[1]) : null,
 
-  latestEarnings: epsMatch
-    ? parseNumber(epsMatch[1])
-    : null,
-};
+      latestEarnings: epsMatch ? parseNumber(epsMatch[1]) : null,
+    };
 
-setCache(
-  cacheKey,
-  data,
-  60 * 60 * 1000
-);
+    // Fundamentals are relatively stable,
+    // so cache them for one hour.
+    setCache(cacheKey, result, 60 * 60 * 1000);
 
-return data;
+    return result;
   } catch (error) {
-    console.error(`Google Finance error for ${symbol}:`, error);
+    console.error(`Google Finance failed for ${symbol}:`, error);
 
+    // Do not crash the entire portfolio
+    // if one external provider fails.
     return {
       peRatio: null,
       latestEarnings: null,

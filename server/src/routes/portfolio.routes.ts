@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   getPortfolio,
   calculatePortfolioSummary,
@@ -7,10 +8,12 @@ import {
 
 const router = Router();
 
-router.get("/", async (_req, res) => {
+router.get("/", async (_req, res, next) => {
   try {
     const portfolio = await getPortfolio();
+
     const summary = calculatePortfolioSummary(portfolio);
+
     const sectors = calculateSectorSummaries(portfolio);
 
     res.json({
@@ -22,12 +25,7 @@ router.get("/", async (_req, res) => {
       data: portfolio,
     });
   } catch (error) {
-    console.error("Portfolio error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Unable to load portfolio data",
-    });
+    next(error);
   }
 });
 

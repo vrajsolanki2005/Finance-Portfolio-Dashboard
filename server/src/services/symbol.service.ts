@@ -1,17 +1,15 @@
-export function getYahooSymbol(
-  exchangeCode: string
-): string | null {
-  const code = exchangeCode.trim();
+export function getYahooSymbol(exchangeCode: string): string | null {
+  const code = exchangeCode.trim().toUpperCase();
 
   if (!code) {
     return null;
   }
 
-  // Numeric codes are BSE codes
+  // BSE security code
   if (/^\d+$/.test(code)) {
     return `${code}.BO`;
   }
 
-  // Alphabetic NSE symbols
+  // NSE ticker
   return `${code}.NS`;
 }

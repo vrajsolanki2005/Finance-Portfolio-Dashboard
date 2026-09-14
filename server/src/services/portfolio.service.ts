@@ -1,14 +1,14 @@
-import { readPortfolioExcel } from "./excel.service.js";
+import { supabase } from "../config/supabase.js";
+import { getYahooSymbol } from "./symbol.service.js";
+import { getCurrentPrices } from "./yahoo.service.js";
+import { getGoogleFinanceData } from "./google-finance.service.js";
+import { getGoogleFinanceSymbol } from "./google-symbol.service.js";
+import { resolveYahooSymbol } from "./yahoo-symbol.service.js";
 import {
   Holding,
   PortfolioSummary,
   SectorSummary,
 } from "../types/portfolio.js";
-import { getCurrentPrices } from "./yahoo.service.js";
-import { getGoogleFinanceData } from "./google-finance.service.js";
-
-import { getGoogleFinanceSymbol } from "./google-symbol.service.js";
-import { getYahooSymbol } from "./symbol.service.js";
 
 function toNumber(value: unknown): number {
   if (value === null || value === undefined || value === "") {
@@ -56,79 +56,64 @@ function getRowValue(row: Record<string, unknown>, aliases: string[]): unknown {
 }
 
 export async function getPortfolio(): Promise<Holding[]> {
-  const rows = readPortfolioExcel();
-
-  const holdings: Holding[] = [];
-
-  let currentSector = "Other";
-
-  rows.forEach((row, index) => {
-    const particulars = cleanText(
-      getRowValue(row, ["Particulars", "Company", "Name", "__EMPTY_1"]),
-    );
-
-    if (!particulars || particulars.toLowerCase() === "particulars") {
-      return;
-    }
-
-    const purchasePrice = toNumber(
-      getRowValue(row, [
-        "Purchase Price",
-        "PurchasePrice",
-        "Price",
-        "__EMPTY_2",
-      ]),
-    );
-    const quantity = toNumber(
-      getRowValue(row, ["Qty", "Quantity", "__EMPTY_3"]),
-    );
-
-    if (
-      particulars.toLowerCase().includes("sector") &&
-      purchasePrice <= 0 &&
-      quantity <= 0
-    ) {
-      currentSector = particulars.replace(/sector/gi, "").trim() || particulars;
-      return;
-    }
-
-    if (purchasePrice <= 0 || quantity <= 0) {
-      return;
-    }
-
-    const investment = purchasePrice * quantity;
-
-    const holding: Holding = {
-      id: index + 1,
-      particulars,
-      sector: currentSector,
-      purchasePrice,
+  const { data, error } = await supabase
+    .from("holdings")
+    .select(
+      `
+      id,
+      stock_name,
+      purchase_price,
       quantity,
-      investment,
-      portfolioPercentage: 0,
-      exchangeCode: cleanText(
-        getRowValue(row, ["NSE/BSE", "Exchange", "Symbol", "__EMPTY_6"]),
-      ),
-      cmp: toNumber(getRowValue(row, ["CMP", "Price", "__EMPTY_7"])) || null,
-      presentValue:
-        toNumber(
-          getRowValue(row, ["Present value", "PresentValue", "__EMPTY_8"]),
-        ) || null,
-      gainLoss:
-        toNumber(getRowValue(row, ["Gain/Loss", "GainLoss", "__EMPTY_9"])) ||
-        null,
-      gainLossPercentage: null,
-      peRatio:
-        toNumber(getRowValue(row, ["P/E (TTM)", "PE", "__EMPTY_12"])) || null,
-      latestEarnings:
-        toNumber(
-          getRowValue(row, ["Latest Earnings", "LatestEarnings", "__EMPTY_13"]),
-        ) || null,
-    };
+      exchange_code,
+      sectors (
+        id,
+        name
+      )
+    `,
+    )
+    .order("id");
 
-    holdings.push(holding);
+  if (error) {
+    console.error("Supabase portfolio error:", error);
+
+    throw new Error("Unable to load portfolio from database");
+  }
+
+  const holdings: Holding[] = (data ?? []).map((row: any) => {
+    const investment = Number(row.purchase_price) * Number(row.quantity);
+
+    return {
+      id: Number(row.id),
+
+      particulars: row.stock_name,
+
+      sector: row.sectors?.name ?? "Other",
+
+      purchasePrice: Number(row.purchase_price),
+
+      quantity: Number(row.quantity),
+
+      investment,
+
+      portfolioPercentage: 0,
+
+      exchangeCode: row.exchange_code,
+
+      cmp: null,
+
+      presentValue: null,
+
+      gainLoss: null,
+
+      gainLossPercentage: null,
+
+      peRatio: null,
+
+      latestEarnings: null,
+    };
   });
 
+  // Calculate portfolio allocation.
   const totalInvestment = holdings.reduce(
     (total, holding) => total + holding.investment,
     0,
@@ -139,35 +124,55 @@ export async function getPortfolio(): Promise<Holding[]> {
       totalInvestment > 0 ? (holding.investment / totalInvestment) * 100 : 0;
   });
 
-  const yahooSymbols = holdings
-    .map((holding) => getYahooSymbol(holding.exchangeCode))
+  const resolvedSymbols = await Promise.all(
+    holdings.map(async (holding) => {
+      const symbol = await resolveYahooSymbol(
+        holding.particulars,
+        holding.exchangeCode,
+      );
+
+      return {
+        holding,
+        symbol,
+      };
+    }),
+  );
+
+  const yahooSymbols = resolvedSymbols
+    .map((item) => item.symbol)
     .filter((symbol): symbol is string => symbol !== null);
 
   const prices = await getCurrentPrices(yahooSymbols);
 
-  holdings.forEach((holding) => {
-    const yahooSymbol = getYahooSymbol(holding.exchangeCode);
+  for (const item of resolvedSymbols) {
+    const { holding, symbol } = item;
 
-    if (!yahooSymbol) {
-      return;
+    if (!symbol) {
+      console.warn(`Yahoo symbol not found for ${holding.particulars}`);
+
+      continue;
     }
 
-    const cmp = prices[yahooSymbol];
+    const cmp = prices[symbol];
 
     if (typeof cmp !== "number") {
-      return;
+      console.warn(`CMP unavailable for ${holding.particulars} (${symbol})`);
+
+      continue;
     }
 
     holding.cmp = cmp;
+
     holding.presentValue = cmp * holding.quantity;
+
     holding.gainLoss = holding.presentValue - holding.investment;
+
     holding.gainLossPercentage =
       holding.investment > 0
         ? (holding.gainLoss / holding.investment) * 100
         : 0;
-  });
-
-  const fundamentalResults = await Promise.all(
+  }
+  const fundamentalResults = await Promise.allSettled(
     holdings.map(async (holding) => {
       const googleSymbol = getGoogleFinanceSymbol(holding.exchangeCode);
 
@@ -188,19 +193,35 @@ export async function getPortfolio(): Promise<Holding[]> {
   );
 
   for (const result of fundamentalResults) {
-    if (!result.data) continue;
+    // Promise was rejected
+    if (result.status === "rejected") {
+      console.error("Fundamental request failed:", result.reason);
 
-    const holding = holdings.find((item) => item.id === result.holdingId);
+      continue;
+    }
 
-    if (!holding) continue;
+    // Promise was fulfilled.
+    // The actual returned object is inside result.value.
+    const { holdingId, data } = result.value;
 
-    holding.peRatio = result.data.peRatio;
+    if (!data) {
+      continue;
+    }
 
-    holding.latestEarnings = result.data.latestEarnings;
+    const holding = holdings.find((item) => item.id === holdingId);
+
+    if (!holding) {
+      continue;
+    }
+
+    holding.peRatio = data.peRatio;
+
+    holding.latestEarnings = data.latestEarnings;
   }
 
   return holdings;
 }
+
 export function calculatePortfolioSummary(
   holdings: Holding[],
 ): PortfolioSummary {

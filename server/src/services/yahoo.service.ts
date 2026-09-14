@@ -23,6 +23,17 @@ export async function getCurrentPrices(
 ): Promise<Record<string, number | null>> {
   const uniqueSymbols = [...new Set(symbols)];
 
+  const prices: Record<string, number | null> = {};
+
+  // Default every symbol to null.
+  for (const symbol of uniqueSymbols) {
+    prices[symbol] = null;
+  }
+
+  if (uniqueSymbols.length === 0) {
+    return prices;
+  }
+
   const cacheKey = `yahoo-prices:${uniqueSymbols.sort().join(",")}`;
 
   const cached = getCache<Record<string, number | null>>(cacheKey);
@@ -33,36 +44,21 @@ export async function getCurrentPrices(
     return cached;
   }
 
-  console.log("Fetching fresh prices from Yahoo Finance");
+  console.log("Fetching Yahoo prices:", uniqueSymbols);
 
   try {
     const quotes = await yahooFinance.quote(uniqueSymbols);
 
-    const prices: Record<string, number | null> = {};
-
-    for (const symbol of uniqueSymbols) {
-      prices[symbol] = null;
-    }
-
     for (const quote of quotes) {
-      prices[quote.symbol] =
-        typeof quote.regularMarketPrice === "number"
-          ? quote.regularMarketPrice
-          : null;
+      if (typeof quote.regularMarketPrice === "number") {
+        prices[quote.symbol] = quote.regularMarketPrice;
+      }
     }
-
-    setCache(cacheKey, prices, 15 * 1000);
-
-    return prices;
   } catch (error) {
-    console.error("Yahoo Finance batch error:", error);
-
-    const prices: Record<string, number | null> = {};
-
-    for (const symbol of uniqueSymbols) {
-      prices[symbol] = null;
-    }
-
-    return prices;
+    console.error("Yahoo batch request failed:", error);
   }
+
+  setCache(cacheKey, prices, 15 * 1000);
+
+  return prices;
 }
