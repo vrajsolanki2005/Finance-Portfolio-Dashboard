@@ -13,23 +13,39 @@ export default function StatCard({
   positive,
   negative,
 }: StatCardProps) {
-  let valueClass = "text-gray-900";
-
-  if (positive) {
-    valueClass = "text-green-600";
-  }
-
-  if (negative) {
-    valueClass = "text-red-600";
-  }
-
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-gray-500">{title}</p>
+    <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl shadow-lg transition-all duration-200 hover:border-slate-700 hover:shadow-cyan-500/5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          {title}
+        </p>
+        {positive && (
+          <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400">
+            ▲ Positive
+          </span>
+        )}
+        {negative && (
+          <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-medium text-rose-400">
+            ▼ Negative
+          </span>
+        )}
+      </div>
 
-      <p className={`mt-2 text-2xl font-bold ${valueClass}`}>{value}</p>
+      <p
+        className={`mt-3 text-2xl font-bold tracking-tight ${
+          positive
+            ? "text-emerald-400"
+            : negative
+            ? "text-rose-400"
+            : "text-slate-100"
+        }`}
+      >
+        {value}
+      </p>
 
-      {subtitle && <p className="mt-1 text-xs text-gray-500">{subtitle}</p>}
+      {subtitle && (
+        <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>
+      )}
     </div>
   );
 }

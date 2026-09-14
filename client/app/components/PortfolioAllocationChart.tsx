@@ -2,13 +2,18 @@
 
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-interface SectorData {
-  sector: string;
-  totalInvestment: number;
-}
+const COLORS = [
+  "#38bdf8",
+  "#818cf8",
+  "#34d399",
+  "#f472b6",
+  "#fbbf24",
+  "#a78bfa",
+  "#2dd4bf",
+];
 
 interface Props {
-  sectors: SectorData[];
+  sectors: { sector: string; totalInvestment: number }[];
 }
 
 export default function PortfolioAllocationChart({ sectors }: Props) {
@@ -18,10 +23,15 @@ export default function PortfolioAllocationChart({ sectors }: Props) {
   }));
 
   return (
-    <div className="rounded-xl bg-white p-5 shadow">
-      <h2 className="mb-4 text-lg font-bold">Portfolio Allocation</h2>
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl shadow-xl">
+      <h2 className="text-base font-semibold text-slate-100">
+        Portfolio Allocation
+      </h2>
+      <p className="text-xs text-slate-400 mb-4">
+        Capital split across industry sectors
+      </p>
 
-      <div className="h-[320px]">
+      <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -30,15 +40,24 @@ export default function PortfolioAllocationChart({ sectors }: Props) {
               nameKey="name"
               cx="50%"
               cy="50%"
-              outerRadius={100}
-              label
+              innerRadius={65}
+              outerRadius={95}
+              stroke="#0f172a"
+              strokeWidth={3}
+              paddingAngle={4}
             >
               {data.map((_, index) => (
-                <Cell key={index} />
+                <Cell key={index} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-
             <Tooltip
+              contentStyle={{
+                backgroundColor: "#0f172a",
+                borderColor: "#334155",
+                borderRadius: "0.75rem",
+                color: "#f8fafc",
+                fontSize: "12px",
+              }}
               formatter={(value) => `₹${Number(value).toLocaleString("en-IN")}`}
             />
           </PieChart>

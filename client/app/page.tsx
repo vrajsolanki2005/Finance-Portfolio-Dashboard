@@ -3,15 +3,12 @@
 import { useEffect, useState } from "react";
 import PortfolioAllocationChart from "./components/PortfolioAllocationChart";
 import PortfolioPerformanceChart from "./components/PortfolioPerformanceChart";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
 import StatCard from "./components/StatCard";
 
-function formatCurrency(value: number | null) {
-  if (value === null) {
-    return "—";
-  }
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+function formatCurrency(value: number | null) {
+  if (value === null) return "—";
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -65,11 +62,7 @@ export default function Home() {
     async function loadPortfolio() {
       try {
         const response = await fetch(`${API_URL}/api/portfolio`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch portfolio");
-        }
-
+        if (!response.ok) throw new Error("Failed to fetch portfolio");
         const result = await response.json();
 
         setHoldings(result.data);
@@ -77,8 +70,8 @@ export default function Home() {
         setSectors(result.sectors);
         setLastUpdated(new Date());
         setError("");
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
         setError("Unable to load portfolio");
       } finally {
         setLoading(false);
@@ -86,27 +79,19 @@ export default function Home() {
     }
 
     loadPortfolio();
-
     const interval = setInterval(loadPortfolio, 15 * 1000);
-
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50">
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0f19]">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-900" />
-
-          <p className="text-sm font-medium text-gray-700">
-            Loading portfolio...
+          <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+          <p className="text-sm font-semibold tracking-wide text-slate-200">
+            Syncing market rates...
           </p>
-
-          <p className="mt-1 text-xs text-gray-500">
-            Fetching latest market data
-          </p>
+          <p className="mt-1 text-xs text-slate-500">Connecting to real-time feed</p>
         </div>
       </main>
     );
@@ -114,22 +99,20 @@ export default function Home() {
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md rounded-xl bg-white p-8 text-center shadow">
-          <h1 className="text-xl font-bold text-gray-900">
-            Unable to load portfolio
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-500">
-            The portfolio service could not be reached. Please check that the
-            backend is running.
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0f19] px-4">
+        <div className="max-w-md rounded-2xl border border-rose-500/20 bg-slate-900/80 p-8 text-center backdrop-blur-xl">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-400">
+            !
+          </div>
+          <h1 className="text-lg font-bold text-slate-100">{error}</h1>
+          <p className="mt-2 text-sm text-slate-400">
+            The market feed could not be reached. Ensure your backend server is online.
           </p>
-
           <button
             onClick={() => window.location.reload()}
-            className="mt-6 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+            className="mt-5 inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
           >
-            Try again
+            Retry Connection
           </button>
         </div>
       </main>
@@ -140,64 +123,65 @@ export default function Home() {
     .map((sector) => ({
       ...sector,
       holdings: sector.holdings.filter((holding) =>
-        holding.particulars.toLowerCase().includes(search.toLowerCase()),
+        holding.particulars.toLowerCase().includes(search.toLowerCase())
       ),
     }))
     .filter((sector) => sector.holdings.length > 0);
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
-      <div className="mx-auto max-w-[1600px]">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+    <main className="min-h-screen bg-[#0b0f19] text-slate-200 px-4 py-8 md:px-10">
+      <div className="mx-auto max-w-[1600px] space-y-8">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Portfolio Dashboard
-            </h1>
-
-            <p className="text-sm text-gray-500">
-              Live portfolio monitoring
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                Live Portfolio Monitor
+              </h1>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Automated real-time valuation & risk distribution
             </p>
           </div>
 
-          <div className="text-sm text-gray-500">
-            {lastUpdated
-              ? `Last updated ${lastUpdated.toLocaleTimeString()}`
-              : "Updating..."}
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/80 px-3.5 py-1.5 text-xs text-slate-400 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            {lastUpdated ? `Sync: ${lastUpdated.toLocaleTimeString()}` : "Connecting..."}
           </div>
         </div>
 
+        {/* Top KPI Metrics */}
         {summary && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              title="Total Investment"
+              title="Total Invested"
               value={formatCurrency(summary.totalInvestment)}
-              subtitle="Total amount invested"
+              subtitle="Aggregated cost basis"
             />
-
             <StatCard
-              title="Present Value"
+              title="Current Value"
               value={formatCurrency(summary.totalPresentValue)}
-              subtitle="Current portfolio value"
+              subtitle="Liquid valuation"
             />
-
             <StatCard
-              title="Total Gain/Loss"
+              title="Unrealized P&L"
               value={formatCurrency(summary.totalGainLoss)}
-              subtitle={`${summary.totalGainLossPercentage.toFixed(2)}% overall`}
+              subtitle={`${summary.totalGainLossPercentage >= 0 ? "+" : ""}${summary.totalGainLossPercentage.toFixed(2)}% net movement`}
               positive={summary.totalGainLoss >= 0}
               negative={summary.totalGainLoss < 0}
             />
-
             <StatCard
-              title="Holdings"
+              title="Active Positions"
               value={holdings.length.toString()}
-              subtitle="Stocks in portfolio"
+              subtitle="Open equity assets"
             />
           </div>
         )}
-        <div className="mb-8 grid gap-6 lg:grid-cols-2">
-          <PortfolioAllocationChart sectors={sectors} />
 
+        {/* Visual Charts */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <PortfolioAllocationChart sectors={sectors} />
           {summary && (
             <PortfolioPerformanceChart
               investment={summary.totalInvestment}
@@ -206,211 +190,150 @@ export default function Home() {
           )}
         </div>
 
-        <div className="mb-6">
-          <input
-            type="text"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search stocks..."
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200 md:max-w-md"
-          />
+        {/* Search Bar */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative w-full max-w-sm">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search assets by symbol or name..."
+              className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5 pl-10 text-sm text-slate-200 placeholder-slate-500 shadow-inner outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+            <svg
+              className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
 
-        {sectors.length === 0 && (
-          <div className="rounded-xl bg-white p-10 text-center shadow">
-            <h2 className="text-lg font-semibold text-gray-900">
-              No portfolio data found
-            </h2>
+        {/* Sector Grouped Tables */}
+        {filteredSectors.map((sector) => (
+          <section
+            key={sector.sector}
+            className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl shadow-lg"
+          >
+            {/* Sector Header Strip */}
+            <div className="border-b border-slate-800/80 bg-slate-900/90 px-6 py-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-white tracking-wide">
+                    {sector.sector}
+                  </h2>
+                  <p className="text-xs font-medium text-slate-400">
+                    {sector.holdings.length} Positions
+                  </p>
+                </div>
 
-            <p className="mt-2 text-sm text-gray-500">
-              No valid holdings were found in the portfolio file.
-            </p>
-          </div>
-        )}
-
-        {filteredSectors.map((sector) => {
-          return (
-            <section
-              key={sector.sector}
-              className="mb-6 overflow-hidden rounded-xl bg-white shadow"
-            >
-              <div className="border-b bg-gray-50 p-5">
-                <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+                <div className="flex items-center gap-6 text-xs">
                   <div>
-                    <h2 className="text-xl font-bold">{sector.sector}</h2>
-                    <p className="text-sm text-gray-500">
-                      {sector.holdings.length} holdings
-                    </p>
+                    <span className="block text-slate-500 uppercase tracking-wider">Invested</span>
+                    <span className="font-semibold text-slate-200">
+                      ₹{sector.totalInvestment.toLocaleString("en-IN")}
+                    </span>
                   </div>
-
-                  <div className="flex flex-wrap gap-6 text-sm">
-                    <div>
-                      <p className="text-gray-500">Investment</p>
-                      <p className="font-semibold">
-                        ₹{sector.totalInvestment.toLocaleString("en-IN")}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-gray-500">Present Value</p>
-                      <p className="font-semibold">
-                        ₹{sector.totalPresentValue.toLocaleString("en-IN")}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-gray-500">Gain / Loss</p>
-
-                      <p
-                        className={
-                          sector.totalGainLoss >= 0
-                            ? "font-semibold text-green-600"
-                            : "font-semibold text-red-600"
-                        }
-                      >
-                        {sector.totalGainLoss >= 0 ? "+" : ""}₹
-                        {sector.totalGainLoss.toLocaleString("en-IN")}
-                      </p>
-
-                      <p
-                        className={
-                          sector.totalGainLossPercentage >= 0
-                            ? "text-xs text-green-600"
-                            : "text-xs text-red-600"
-                        }
-                      >
-                        {sector.totalGainLossPercentage >= 0 ? "+" : ""}
-                        {sector.totalGainLossPercentage.toFixed(2)}%
-                      </p>
-                    </div>
+                  <div>
+                    <span className="block text-slate-500 uppercase tracking-wider">Present Value</span>
+                    <span className="font-semibold text-slate-200">
+                      ₹{sector.totalPresentValue.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-slate-500 uppercase tracking-wider">Net Return</span>
+                    <span
+                      className={`font-semibold ${
+                        sector.totalGainLoss >= 0 ? "text-emerald-400" : "text-rose-400"
+                      }`}
+                    >
+                      {sector.totalGainLoss >= 0 ? "+" : ""}₹{sector.totalGainLoss.toLocaleString("en-IN")} (
+                      {sector.totalGainLossPercentage >= 0 ? "+" : ""}
+                      {sector.totalGainLossPercentage.toFixed(2)}%)
+                    </span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1200px] text-left text-sm">
-                  <thead className="border-b bg-white">
-                    <tr>
-                      <th className="p-4">Particulars</th>
-                      <th className="p-4">Purchase Price</th>
-                      <th className="p-4">Qty</th>
-                      <th className="p-4">Investment</th>
-                      <th className="p-4">Portfolio %</th>
-                      <th className="p-4">NSE/BSE</th>
-                      <th className="p-4">CMP</th>
-                      <th className="p-4">Present Value</th>
-                      <th className="p-4">Gain/Loss</th>
-                      <th className="p-4">Gain/Loss %</th>
-                      <th className="p-4">P/E Ratio</th>
-                      <th className="p-4">Latest Earnings</th>
-                    </tr>
-                  </thead>
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1100px] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800/60 bg-slate-950/40 text-slate-400">
+                    <th className="p-4 font-semibold uppercase tracking-wider">Asset</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider">Exchange</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">Avg Price</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">Qty</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">Invested</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">Weight</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">CMP</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">Valuation</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">Total P&L</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">P/E</th>
+                    <th className="p-4 font-semibold uppercase tracking-wider text-right">EPS</th>
+                  </tr>
+                </thead>
 
-                  <tbody>
-                    {sector.holdings.map((holding) => (
+                <tbody className="divide-y divide-slate-800/40 font-mono text-slate-300">
+                  {sector.holdings.map((holding) => {
+                    const isProfit = (holding.gainLoss ?? 0) >= 0;
+                    return (
                       <tr
                         key={holding.id}
-                        className="border-b last:border-b-0 hover:bg-gray-50"
+                        className="transition-colors hover:bg-slate-800/30"
                       >
-                        <td className="p-4 font-medium">
+                        <td className="p-4 font-sans font-medium text-white">
                           {holding.particulars}
                         </td>
-
-                        <td className="p-4">
-                          ₹{holding.purchasePrice.toLocaleString("en-IN")}
+                        <td className="p-4 font-mono text-[11px] text-slate-400">
+                          <span className="rounded bg-slate-800 px-1.5 py-0.5">
+                            {holding.exchangeCode}
+                          </span>
                         </td>
-
-                        <td className="p-4">{holding.quantity}</td>
-
-                        <td className="p-4">
-                          ₹{holding.investment.toLocaleString("en-IN")}
+                        <td className="p-4 text-right">₹{holding.purchasePrice.toLocaleString("en-IN")}</td>
+                        <td className="p-4 text-right">{holding.quantity}</td>
+                        <td className="p-4 text-right">₹{holding.investment.toLocaleString("en-IN")}</td>
+                        <td className="p-4 text-right">{holding.portfolioPercentage.toFixed(2)}%</td>
+                        <td className="p-4 text-right text-white">
+                          {holding.cmp !== null ? `₹${holding.cmp.toLocaleString("en-IN")}` : "—"}
                         </td>
-
-                        <td className="p-4">
-                          {holding.portfolioPercentage.toFixed(2)}%
-                        </td>
-
-                        <td className="p-4 font-mono text-xs">
-                          {holding.exchangeCode}
-                        </td>
-
-                        <td className="p-4 font-medium">
-                          {holding.cmp !== null
-                            ? `₹${holding.cmp.toLocaleString("en-IN", {
-                                maximumFractionDigits: 2,
-                              })}`
-                            : "—"}
-                        </td>
-
-                        <td className="p-4">
+                        <td className="p-4 text-right text-white">
                           {holding.presentValue !== null
-                            ? `₹${holding.presentValue.toLocaleString("en-IN", {
-                                maximumFractionDigits: 2,
-                              })}`
+                            ? `₹${holding.presentValue.toLocaleString("en-IN")}`
                             : "—"}
                         </td>
-
-                        <td
-                          className={`p-4 font-semibold ${
-                            holding.gainLoss !== null
-                              ? holding.gainLoss >= 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                              : ""
-                          }`}
-                        >
-                          {holding.gainLoss !== null
-                            ? `${holding.gainLoss >= 0 ? "+" : ""}₹${holding.gainLoss.toLocaleString(
-                                "en-IN",
-                                {
-                                  maximumFractionDigits: 2,
-                                },
-                              )}`
-                            : "—"}
+                        <td className="p-4 text-right">
+                          {holding.gainLoss !== null ? (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold ${
+                                isProfit
+                                  ? "bg-emerald-500/10 text-emerald-400"
+                                  : "bg-rose-500/10 text-rose-400"
+                              }`}
+                            >
+                              {isProfit ? "+" : ""}
+                              {holding.gainLossPercentage?.toFixed(2)}%
+                            </span>
+                          ) : (
+                            "—"
+                          )}
                         </td>
-                        <td
-                          className={`p-4 font-semibold ${
-                            holding.gainLossPercentage !== null
-                              ? holding.gainLossPercentage >= 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                              : ""
-                          }`}
-                        >
-                          {holding.gainLossPercentage !== null
-                            ? `${holding.gainLossPercentage >= 0 ? "+" : ""}${holding.gainLossPercentage.toFixed(2)}%`
-                            : "—"}
-                        </td>
-
-                        <td className="p-4">
-                          {holding.peRatio !== null
-                            ? holding.peRatio.toFixed(2)
-                            : "—"}
-                        </td>
-
-                        <td className="p-4">
-                          {holding.latestEarnings !== null
-                            ? `₹${holding.latestEarnings.toFixed(2)}`
-                            : "—"}
+                        <td className="p-4 text-right">{holding.peRatio?.toFixed(1) ?? "—"}</td>
+                        <td className="p-4 text-right">
+                          {holding.latestEarnings !== null ? `₹${holding.latestEarnings.toFixed(2)}` : "—"}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          );
-        })}
-
-        {search && filteredSectors.length === 0 && (
-          <div className="rounded-xl bg-white p-8 text-center shadow">
-            <p className="font-medium text-gray-900">No stocks found</p>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Try searching for a different stock name.
-            </p>
-          </div>
-        )}
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))}
       </div>
     </main>
   );
