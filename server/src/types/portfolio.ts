@@ -10,6 +10,7 @@ export interface Holding {
   cmp: number | null;
   presentValue: number | null;
   gainLoss: number | null;
+  gainLossPercentage: number | null;
   peRatio: number | null;
   latestEarnings: number | null;
 }

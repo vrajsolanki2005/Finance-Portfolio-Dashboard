@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PortfolioAllocationChart from "./components/PortfolioAllocationChart";
 
 interface Holding {
   id: number;
@@ -14,6 +15,7 @@ interface Holding {
   cmp: number | null;
   presentValue: number | null;
   gainLoss: number | null;
+  gainLossPercentage: number | null;
   peRatio: number | null;
   latestEarnings: number | null;
 }
@@ -78,19 +80,45 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-lg">Loading portfolio...</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-900" />
+
+          <p className="text-sm font-medium text-gray-700">
+            Loading portfolio...
+          </p>
+
+          <p className="mt-1 text-xs text-gray-500">
+            Fetching latest market data
+          </p>
+        </div>
       </main>
     );
   }
 
   if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-red-600">{error}</p>
-      </main>
-    );
-  }
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md rounded-xl bg-white p-8 text-center shadow">
+        <h1 className="text-xl font-bold text-gray-900">
+          Unable to load portfolio
+        </h1>
+
+        <p className="mt-2 text-sm text-gray-500">
+          The portfolio service could not be reached.
+          Please check that the backend is running.
+        </p>
+
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-6 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+        >
+          Try again
+        </button>
+      </div>
+    </main>
+  );
+}
 
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
@@ -174,6 +202,9 @@ export default function Home() {
             </div>
           </div>
         )}
+        <div className="mb-8">
+          <PortfolioAllocationChart sectors={sectors} />
+        </div>
 
         <div className="mb-6">
           <input
@@ -187,7 +218,7 @@ export default function Home() {
 
         {sectors.map((sector) => {
           const filteredHoldings = sector.holdings.filter((holding) =>
-            holding.particulars.toLowerCase().includes(search.toLowerCase())
+            holding.particulars.toLowerCase().includes(search.toLowerCase()),
           );
 
           if (filteredHoldings.length === 0) {
@@ -225,6 +256,7 @@ export default function Home() {
 
                     <div>
                       <p className="text-gray-500">Gain / Loss</p>
+
                       <p
                         className={
                           sector.totalGainLoss >= 0
@@ -234,6 +266,17 @@ export default function Home() {
                       >
                         {sector.totalGainLoss >= 0 ? "+" : ""}₹
                         {sector.totalGainLoss.toLocaleString("en-IN")}
+                      </p>
+
+                      <p
+                        className={
+                          sector.totalGainLossPercentage >= 0
+                            ? "text-xs text-green-600"
+                            : "text-xs text-red-600"
+                        }
+                      >
+                        {sector.totalGainLossPercentage >= 0 ? "+" : ""}
+                        {sector.totalGainLossPercentage.toFixed(2)}%
                       </p>
                     </div>
                   </div>
@@ -253,6 +296,7 @@ export default function Home() {
                       <th className="p-4">CMP</th>
                       <th className="p-4">Present Value</th>
                       <th className="p-4">Gain/Loss</th>
+                      <th className="p-4">Gain/Loss %</th>
                       <th className="p-4">P/E Ratio</th>
                       <th className="p-4">Latest Earnings</th>
                     </tr>
@@ -316,8 +360,21 @@ export default function Home() {
                                 "en-IN",
                                 {
                                   maximumFractionDigits: 2,
-                                }
+                                },
                               )}`
+                            : "—"}
+                        </td>
+                        <td
+                          className={`p-4 font-semibold ${
+                            holding.gainLossPercentage !== null
+                              ? holding.gainLossPercentage >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                              : ""
+                          }`}
+                        >
+                          {holding.gainLossPercentage !== null
+                            ? `${holding.gainLossPercentage >= 0 ? "+" : ""}${holding.gainLossPercentage.toFixed(2)}%`
                             : "—"}
                         </td>
 

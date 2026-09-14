@@ -1,5 +1,9 @@
 import { readPortfolioExcel } from "./excel.service.js";
-import { Holding, PortfolioSummary, SectorSummary } from "../types/portfolio.js";
+import {
+  Holding,
+  PortfolioSummary,
+  SectorSummary,
+} from "../types/portfolio.js";
 import { getCurrentPrices } from "./yahoo.service.js";
 import { getGoogleFinanceData } from "./google-finance.service.js";
 
@@ -113,6 +117,7 @@ export async function getPortfolio(): Promise<Holding[]> {
       gainLoss:
         toNumber(getRowValue(row, ["Gain/Loss", "GainLoss", "__EMPTY_9"])) ||
         null,
+      gainLossPercentage: null,
       peRatio:
         toNumber(getRowValue(row, ["P/E (TTM)", "PE", "__EMPTY_12"])) || null,
       latestEarnings:
@@ -154,10 +159,12 @@ export async function getPortfolio(): Promise<Holding[]> {
     }
 
     holding.cmp = cmp;
-
     holding.presentValue = cmp * holding.quantity;
-
     holding.gainLoss = holding.presentValue - holding.investment;
+    holding.gainLossPercentage =
+      holding.investment > 0
+        ? (holding.gainLoss / holding.investment) * 100
+        : 0;
   });
 
   for (const holding of holdings) {
@@ -202,64 +209,42 @@ export function calculatePortfolioSummary(
   };
 }
 
-export function calculateSectorSummaries(
-  holdings: Holding[]
-): SectorSummary[] {
-  const sectorMap =
-    new Map<string, Holding[]>();
+export function calculateSectorSummaries(holdings: Holding[]): SectorSummary[] {
+  const sectorMap = new Map<string, Holding[]>();
 
   for (const holding of holdings) {
-    const existing =
-      sectorMap.get(holding.sector);
+    const existing = sectorMap.get(holding.sector);
 
     if (existing) {
       existing.push(holding);
     } else {
-      sectorMap.set(
-        holding.sector,
-        [holding]
-      );
+      sectorMap.set(holding.sector, [holding]);
     }
   }
 
-  return Array.from(
-    sectorMap.entries()
-  ).map(
-    ([sector, sectorHoldings]) => {
-      const totalInvestment =
-        sectorHoldings.reduce(
-          (total, holding) =>
-            total + holding.investment,
-          0
-        );
+  return Array.from(sectorMap.entries()).map(([sector, sectorHoldings]) => {
+    const totalInvestment = sectorHoldings.reduce(
+      (total, holding) => total + holding.investment,
+      0,
+    );
 
-      const totalPresentValue =
-        sectorHoldings.reduce(
-          (total, holding) =>
-            total +
-            (holding.presentValue ?? 0),
-          0
-        );
+    const totalPresentValue = sectorHoldings.reduce(
+      (total, holding) => total + (holding.presentValue ?? 0),
+      0,
+    );
 
-      const totalGainLoss =
-        totalPresentValue -
-        totalInvestment;
+    const totalGainLoss = totalPresentValue - totalInvestment;
 
-      const totalGainLossPercentage =
-        totalInvestment > 0
-          ? (totalGainLoss /
-              totalInvestment) *
-            100
-          : 0;
+    const totalGainLossPercentage =
+      totalInvestment > 0 ? (totalGainLoss / totalInvestment) * 100 : 0;
 
-      return {
-        sector,
-        totalInvestment,
-        totalPresentValue,
-        totalGainLoss,
-        totalGainLossPercentage,
-        holdings: sectorHoldings,
-      };
-    }
-  );
+    return {
+      sector,
+      totalInvestment,
+      totalPresentValue,
+      totalGainLoss,
+      totalGainLossPercentage,
+      holdings: sectorHoldings,
+    };
+  });
 }
