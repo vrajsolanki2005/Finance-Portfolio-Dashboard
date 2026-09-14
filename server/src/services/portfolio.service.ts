@@ -4,11 +4,8 @@ import { getCurrentPrices } from "./yahoo.service.js";
 import { getGoogleFinanceData } from "./google-finance.service.js";
 import { getGoogleFinanceSymbol } from "./google-symbol.service.js";
 import { resolveYahooSymbol } from "./yahoo-symbol.service.js";
-import {
-  Holding,
-  PortfolioSummary,
-  SectorSummary,
-} from "../types/portfolio.js";
+import {Holding,PortfolioSummary,SectorSummary,} from "../types/portfolio.js";
+// import { getYahooSymbol } from "./symbol.service.js";
 
 function toNumber(value: unknown): number {
   if (value === null || value === undefined || value === "") {

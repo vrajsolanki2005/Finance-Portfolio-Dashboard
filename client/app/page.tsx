@@ -3,9 +3,22 @@
 import { useEffect, useState } from "react";
 import PortfolioAllocationChart from "./components/PortfolioAllocationChart";
 import PortfolioPerformanceChart from "./components/PortfolioPerformanceChart";
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+import StatCard from "./components/StatCard";
+
+function formatCurrency(value: number | null) {
+  if (value === null) {
+    return "—";
+  }
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 interface Holding {
   id: number;
   particulars: string;
@@ -51,7 +64,7 @@ export default function Home() {
   useEffect(() => {
     async function loadPortfolio() {
       try {
-        const response = await fetch(`${API_URL}/api/portfolio` );
+        const response = await fetch(`${API_URL}/api/portfolio`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch portfolio");
@@ -135,83 +148,51 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
       <div className="mx-auto max-w-[1600px]">
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="mb-1 text-sm font-medium uppercase tracking-wide text-gray-500">
-              Investment Overview
-            </p>
-
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900">
               Portfolio Dashboard
             </h1>
 
-            <p className="mt-2 text-gray-600">
-              Track portfolio performance and market fundamentals.
+            <p className="text-sm text-gray-500">
+              Live portfolio monitoring
             </p>
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-green-500" />
-            Live
+          <div className="text-sm text-gray-500">
+            {lastUpdated
+              ? `Last updated ${lastUpdated.toLocaleTimeString()}`
+              : "Updating..."}
           </div>
         </div>
 
-        {lastUpdated && (
-          <p className="mb-6 text-sm text-gray-500">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-            {" • "}Auto-refreshes every 15 seconds
-          </p>
-        )}
-
         {summary && (
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl bg-white p-5 shadow">
-              <p className="text-sm text-gray-500">Total Investment</p>
-              <p className="mt-2 text-2xl font-bold">
-                ₹
-                {summary.totalInvestment.toLocaleString("en-IN", {
-                  maximumFractionDigits: 2,
-                })}
-              </p>
-            </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Investment"
+              value={formatCurrency(summary.totalInvestment)}
+              subtitle="Total amount invested"
+            />
 
-            <div className="rounded-xl bg-white p-5 shadow">
-              <p className="text-sm text-gray-500">Present Value</p>
-              <p className="mt-2 text-2xl font-bold">
-                ₹
-                {summary.totalPresentValue.toLocaleString("en-IN", {
-                  maximumFractionDigits: 2,
-                })}
-              </p>
-            </div>
+            <StatCard
+              title="Present Value"
+              value={formatCurrency(summary.totalPresentValue)}
+              subtitle="Current portfolio value"
+            />
 
-            <div className="rounded-xl bg-white p-5 shadow">
-              <p className="text-sm text-gray-500">Total Gain / Loss</p>
-              <p
-                className={`mt-2 text-2xl font-bold ${
-                  summary.totalGainLoss >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {summary.totalGainLoss >= 0 ? "+" : ""}₹
-                {summary.totalGainLoss.toLocaleString("en-IN", {
-                  maximumFractionDigits: 2,
-                })}
-              </p>
-            </div>
+            <StatCard
+              title="Total Gain/Loss"
+              value={formatCurrency(summary.totalGainLoss)}
+              subtitle={`${summary.totalGainLossPercentage.toFixed(2)}% overall`}
+              positive={summary.totalGainLoss >= 0}
+              negative={summary.totalGainLoss < 0}
+            />
 
-            <div className="rounded-xl bg-white p-5 shadow">
-              <p className="text-sm text-gray-500">Overall Return</p>
-              <p
-                className={`mt-2 text-2xl font-bold ${
-                  summary.totalGainLossPercentage >= 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                {summary.totalGainLossPercentage >= 0 ? "+" : ""}
-                {summary.totalGainLossPercentage.toFixed(2)}%
-              </p>
-            </div>
+            <StatCard
+              title="Holdings"
+              value={holdings.length.toString()}
+              subtitle="Stocks in portfolio"
+            />
           </div>
         )}
         <div className="mb-8 grid gap-6 lg:grid-cols-2">
