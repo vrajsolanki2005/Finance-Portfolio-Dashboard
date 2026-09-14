@@ -57,6 +57,12 @@ export async function getCurrentPrices(
   } catch (error) {
     console.error("Yahoo Finance batch error:", error);
 
-    return {};
+    const prices: Record<string, number | null> = {};
+
+    for (const symbol of uniqueSymbols) {
+      prices[symbol] = null;
+    }
+
+    return prices;
   }
 }

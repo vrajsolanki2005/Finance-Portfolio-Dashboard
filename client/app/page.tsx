@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import PortfolioAllocationChart from "./components/PortfolioAllocationChart";
+import PortfolioPerformanceChart from "./components/PortfolioPerformanceChart";
 
 interface Holding {
   id: number;
@@ -97,28 +98,37 @@ export default function Home() {
   }
 
   if (error) {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md rounded-xl bg-white p-8 text-center shadow">
-        <h1 className="text-xl font-bold text-gray-900">
-          Unable to load portfolio
-        </h1>
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md rounded-xl bg-white p-8 text-center shadow">
+          <h1 className="text-xl font-bold text-gray-900">
+            Unable to load portfolio
+          </h1>
 
-        <p className="mt-2 text-sm text-gray-500">
-          The portfolio service could not be reached.
-          Please check that the backend is running.
-        </p>
+          <p className="mt-2 text-sm text-gray-500">
+            The portfolio service could not be reached. Please check that the
+            backend is running.
+          </p>
 
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-6 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-        >
-          Try again
-        </button>
-      </div>
-    </main>
-  );
-}
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Try again
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  const filteredSectors = sectors
+    .map((sector) => ({
+      ...sector,
+      holdings: sector.holdings.filter((holding) =>
+        holding.particulars.toLowerCase().includes(search.toLowerCase()),
+      ),
+    }))
+    .filter((sector) => sector.holdings.length > 0);
 
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
@@ -202,8 +212,15 @@ export default function Home() {
             </div>
           </div>
         )}
-        <div className="mb-8">
+        <div className="mb-8 grid gap-6 lg:grid-cols-2">
           <PortfolioAllocationChart sectors={sectors} />
+
+          {summary && (
+            <PortfolioPerformanceChart
+              investment={summary.totalInvestment}
+              presentValue={summary.totalPresentValue}
+            />
+          )}
         </div>
 
         <div className="mb-6">
@@ -216,15 +233,19 @@ export default function Home() {
           />
         </div>
 
-        {sectors.map((sector) => {
-          const filteredHoldings = sector.holdings.filter((holding) =>
-            holding.particulars.toLowerCase().includes(search.toLowerCase()),
-          );
+        {sectors.length === 0 && (
+          <div className="rounded-xl bg-white p-10 text-center shadow">
+            <h2 className="text-lg font-semibold text-gray-900">
+              No portfolio data found
+            </h2>
 
-          if (filteredHoldings.length === 0) {
-            return null;
-          }
+            <p className="mt-2 text-sm text-gray-500">
+              No valid holdings were found in the portfolio file.
+            </p>
+          </div>
+        )}
 
+        {filteredSectors.map((sector) => {
           return (
             <section
               key={sector.sector}
@@ -235,7 +256,7 @@ export default function Home() {
                   <div>
                     <h2 className="text-xl font-bold">{sector.sector}</h2>
                     <p className="text-sm text-gray-500">
-                      {filteredHoldings.length} holdings
+                      {sector.holdings.length} holdings
                     </p>
                   </div>
 
@@ -303,7 +324,7 @@ export default function Home() {
                   </thead>
 
                   <tbody>
-                    {filteredHoldings.map((holding) => (
+                    {sector.holdings.map((holding) => (
                       <tr
                         key={holding.id}
                         className="border-b last:border-b-0 hover:bg-gray-50"
@@ -397,6 +418,16 @@ export default function Home() {
             </section>
           );
         })}
+
+        {search && filteredSectors.length === 0 && (
+          <div className="rounded-xl bg-white p-8 text-center shadow">
+            <p className="font-medium text-gray-900">No stocks found</p>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Try searching for a different stock name.
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );

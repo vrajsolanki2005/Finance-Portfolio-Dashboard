@@ -167,18 +167,36 @@ export async function getPortfolio(): Promise<Holding[]> {
         : 0;
   });
 
-  for (const holding of holdings) {
-    const googleSymbol = getGoogleFinanceSymbol(holding.exchangeCode);
+  const fundamentalResults = await Promise.all(
+    holdings.map(async (holding) => {
+      const googleSymbol = getGoogleFinanceSymbol(holding.exchangeCode);
 
-    if (!googleSymbol) {
-      continue;
-    }
+      if (!googleSymbol) {
+        return {
+          holdingId: holding.id,
+          data: null,
+        };
+      }
 
-    const fundamentals = await getGoogleFinanceData(googleSymbol);
+      const data = await getGoogleFinanceData(googleSymbol);
 
-    holding.peRatio = fundamentals.peRatio;
+      return {
+        holdingId: holding.id,
+        data,
+      };
+    }),
+  );
 
-    holding.latestEarnings = fundamentals.latestEarnings;
+  for (const result of fundamentalResults) {
+    if (!result.data) continue;
+
+    const holding = holdings.find((item) => item.id === result.holdingId);
+
+    if (!holding) continue;
+
+    holding.peRatio = result.data.peRatio;
+
+    holding.latestEarnings = result.data.latestEarnings;
   }
 
   return holdings;
