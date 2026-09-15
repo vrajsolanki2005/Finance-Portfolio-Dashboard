@@ -1,5 +1,4 @@
 import "dotenv/config";
-
 import * as XLSX from "xlsx";
 import path from "path";
 import { supabase } from "../config/supabase";
@@ -16,7 +15,6 @@ function cleanText(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
-
   return String(value).trim();
 }
 
@@ -32,7 +30,6 @@ function toNumber(value: unknown): number {
     .trim();
 
   const number = Number(cleaned);
-
   return Number.isFinite(number) ? number : 0;
 }
 
@@ -44,13 +41,9 @@ async function importExcel() {
   console.log("Starting Excel import...");
 
   const filePath = path.join(__dirname,"../../data/portfolio.xlsx");
-
   console.log(`Reading: ${filePath}`);
-
   const workbook = XLSX.readFile(filePath);
-
   const sheetName = workbook.SheetNames[0];
-
   const worksheet = workbook.Sheets[sheetName];
 
   // Header is on Excel row 2.
@@ -96,14 +89,11 @@ async function importExcel() {
           `Failed to create sector ${currentSector}: ${error.message}`,
         );
       }
-
       continue;
     }
 
     const purchasePrice = toNumber(row["Purchase Price"]);
-
     const quantity = toNumber(row.Qty);
-
     const exchangeCode = getExchangeCode(row["NSE/BSE"]);
 
     // Ignore rows that are not actual holdings.
@@ -140,7 +130,6 @@ async function importExcel() {
     }
 
     importedCount++;
-
     console.log(`Imported: ${particulars}`);
   }
 
@@ -151,6 +140,5 @@ async function importExcel() {
 
 importExcel().catch((error) => {
   console.error("\nImport failed:", error);
-
   process.exit(1);
 });

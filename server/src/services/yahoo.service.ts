@@ -9,11 +9,9 @@ export async function getCurrentPrice(symbol: string): Promise<number | null> {
     if (typeof quote.regularMarketPrice !== "number") {
       return null;
     }
-
     return quote.regularMarketPrice;
   } catch (error) {
     console.error(`Yahoo Finance error for ${symbol}:`, error);
-
     return null;
   }
 }
@@ -35,12 +33,10 @@ export async function getCurrentPrices(
   }
 
   const cacheKey = `yahoo-prices:${uniqueSymbols.sort().join(",")}`;
-
   const cached = getCache<Record<string, number | null>>(cacheKey);
 
   if (cached) {
     console.log("Returning cached Yahoo prices");
-
     return cached;
   }
 
@@ -59,6 +55,5 @@ export async function getCurrentPrices(
   }
 
   setCache(cacheKey, prices, 15 * 1000);
-
   return prices;
 }

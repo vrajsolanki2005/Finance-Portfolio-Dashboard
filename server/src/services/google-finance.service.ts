@@ -1,5 +1,4 @@
 import * as cheerio from "cheerio";
-
 import { getCache, setCache } from "./cache.service.js";
 
 export interface GoogleFinanceData {
@@ -15,7 +14,6 @@ function parseNumber(value: string): number | null {
     .trim();
 
   const number = Number(cleaned);
-
   return Number.isFinite(number) ? number : null;
 }
 
@@ -29,10 +27,8 @@ export async function getGoogleFinanceData(
 
   if (cached) {
     console.log(`Google Finance cache hit: ${symbol}`);
-
     return cached;
   }
-
   console.log(`Fetching Google Finance: ${symbol}`);
 
   try {
@@ -50,15 +46,10 @@ export async function getGoogleFinanceData(
     }
 
     const html = await response.text();
-
     const $ = cheerio.load(html);
-
     const pageText = $("body").text();
-
     const peMatch = pageText.match(/P\/E ratio\s*([0-9,.]+)/i);
-
     const epsMatch = pageText.match(/EPS\s*₹?\s*([0-9,.]+)/i);
-
     const result: GoogleFinanceData = {
       peRatio: peMatch ? parseNumber(peMatch[1]) : null,
 

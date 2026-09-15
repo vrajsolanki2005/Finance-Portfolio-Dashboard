@@ -11,7 +11,7 @@ function toNumber(value: unknown): number {
   if (value === null || value === undefined || value === "") {
     return 0;
   }
-
+  
   const cleaned = String(value)
     .replace(/,/g, "")
     .replace(/₹/g, "")
@@ -19,7 +19,6 @@ function toNumber(value: unknown): number {
     .trim();
 
   const number = Number(cleaned);
-
   return Number.isFinite(number) ? number : 0;
 }
 
@@ -48,7 +47,6 @@ function getRowValue(row: Record<string, unknown>, aliases: string[]): unknown {
       return value;
     }
   }
-
   return undefined;
 }
 
@@ -72,7 +70,6 @@ export async function getPortfolio(): Promise<Holding[]> {
 
   if (error) {
     console.error("Supabase portfolio error:", error);
-
     throw new Error("Unable to load portfolio from database");
   }
 
@@ -81,31 +78,18 @@ export async function getPortfolio(): Promise<Holding[]> {
 
     return {
       id: Number(row.id),
-
       particulars: row.stock_name,
-
       sector: row.sectors?.name ?? "Other",
-
       purchasePrice: Number(row.purchase_price),
-
       quantity: Number(row.quantity),
-
       investment,
-
       portfolioPercentage: 0,
-
       exchangeCode: row.exchange_code,
-
       cmp: null,
-
       presentValue: null,
-
       gainLoss: null,
-
       gainLossPercentage: null,
-
       peRatio: null,
-
       latestEarnings: null,
     };
   });
@@ -127,7 +111,6 @@ export async function getPortfolio(): Promise<Holding[]> {
         holding.particulars,
         holding.exchangeCode,
       );
-
       return {
         holding,
         symbol,
@@ -146,7 +129,6 @@ export async function getPortfolio(): Promise<Holding[]> {
 
     if (!symbol) {
       console.warn(`Yahoo symbol not found for ${holding.particulars}`);
-
       continue;
     }
 
@@ -154,16 +136,12 @@ export async function getPortfolio(): Promise<Holding[]> {
 
     if (typeof cmp !== "number") {
       console.warn(`CMP unavailable for ${holding.particulars} (${symbol})`);
-
       continue;
     }
 
     holding.cmp = cmp;
-
     holding.presentValue = cmp * holding.quantity;
-
     holding.gainLoss = holding.presentValue - holding.investment;
-
     holding.gainLossPercentage =
       holding.investment > 0
         ? (holding.gainLoss / holding.investment) * 100
@@ -181,7 +159,6 @@ export async function getPortfolio(): Promise<Holding[]> {
       }
 
       const data = await getGoogleFinanceData(googleSymbol);
-
       return {
         holdingId: holding.id,
         data,
@@ -212,7 +189,6 @@ export async function getPortfolio(): Promise<Holding[]> {
     }
 
     holding.peRatio = data.peRatio;
-
     holding.latestEarnings = data.latestEarnings;
   }
 
@@ -226,14 +202,12 @@ export function calculatePortfolioSummary(
     (total, holding) => total + holding.investment,
     0,
   );
-
   const totalPresentValue = holdings.reduce(
     (total, holding) => total + (holding.presentValue ?? 0),
     0,
   );
 
   const totalGainLoss = totalPresentValue - totalInvestment;
-
   const totalGainLossPercentage =
     totalInvestment > 0 ? (totalGainLoss / totalInvestment) * 100 : 0;
 
@@ -270,7 +244,6 @@ export function calculateSectorSummaries(holdings: Holding[]): SectorSummary[] {
     );
 
     const totalGainLoss = totalPresentValue - totalInvestment;
-
     const totalGainLossPercentage =
       totalInvestment > 0 ? (totalGainLoss / totalInvestment) * 100 : 0;
 

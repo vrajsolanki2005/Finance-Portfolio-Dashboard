@@ -11,9 +11,7 @@ const router = Router();
 router.get("/", async (_req, res, next) => {
   try {
     const portfolio = await getPortfolio();
-
     const summary = calculatePortfolioSummary(portfolio);
-
     const sectors = calculateSectorSummaries(portfolio);
 
     res.json({

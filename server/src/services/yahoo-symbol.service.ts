@@ -14,37 +14,31 @@ export async function resolveYahooSymbol(
   exchangeCode: string,
 ): Promise<string | null> {
   const code = exchangeCode.trim().toUpperCase();
-
   const cacheKey = `yahoo-symbol:${stockName}:${code}`;
 
   // 1. Check cached symbol
   const cached = getCache<string | null>(cacheKey);
-
   if (cached !== null) {
     return cached;
   }
 
   // 2. Known symbol overrides
   const override = SYMBOL_OVERRIDES[code];
-
   if (override) {
     console.log(`Yahoo symbol override: ${stockName} → ${override}`);
 
     setCache(cacheKey, override, 24 * 60 * 60 * 1000);
-
     return override;
   }
 
   // 3. Try normal direct symbol
   const directSymbol = getDirectYahooSymbol(code);
-
   if (directSymbol) {
     try {
       const quote = await yahooFinance.quote(directSymbol);
 
       if (typeof quote.regularMarketPrice === "number") {
         setCache(cacheKey, directSymbol, 24 * 60 * 60 * 1000);
-
         return directSymbol;
       }
     } catch {
@@ -64,11 +58,9 @@ export async function resolveYahooSymbol(
     const symbol = findBestIndianSymbol(result.quotes, stockName);
 
     setCache(cacheKey, symbol, 24 * 60 * 60 * 1000);
-
     return symbol;
   } catch (error) {
     console.error(`Yahoo symbol search failed for ${stockName}:`, error);
-
     return null;
   }
 }
@@ -83,14 +75,12 @@ function getDirectYahooSymbol(exchangeCode: string): string | null {
   if (/^\d+$/.test(code)) {
     return `${code}.BO`;
   }
-
   return `${code}.NS`;
 }
 
 function findBestIndianSymbol(quotes: any[], stockName: string): string | null {
   const indianQuotes = quotes.filter((quote) => {
     const symbol = String(quote.symbol ?? "").toUpperCase();
-
     return symbol.endsWith(".NS") || symbol.endsWith(".BO");
   });
 
@@ -102,7 +92,6 @@ function findBestIndianSymbol(quotes: any[], stockName: string): string | null {
 
   const exactName = indianQuotes.find((quote) => {
     const name = normalize(quote.longname ?? quote.shortname ?? "");
-
     return name === normalizedName;
   });
 
@@ -112,14 +101,12 @@ function findBestIndianSymbol(quotes: any[], stockName: string): string | null {
 
   const partialName = indianQuotes.find((quote) => {
     const name = normalize(quote.longname ?? quote.shortname ?? "");
-
     return name.includes(normalizedName) || normalizedName.includes(name);
   });
 
   if (partialName) {
     return String(partialName.symbol);
   }
-
   return String(indianQuotes[0].symbol);
 }
 
